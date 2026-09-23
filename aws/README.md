@@ -3,10 +3,10 @@
 Scripts that go around the Bridge API and hit AWS directly, for cases the
 REST API can't serve efficiently (e.g. a bulk cross-app dump with no bulk
 endpoint). Meant to be run manually by account admins using their SSO-assumed
-AWS role — an explicit `--profile`/`AWS_PROFILE` is required, never an
-ambient default. Prefer AWS-managed/serverless operations over anything
-needing its own compute; there's no Lambda or server in this repo, and these
-scripts are meant to run from a plain terminal or AWS CloudShell.
+AWS role — an explicit `--profile`/`AWS_PROFILE` is required when running locally
+(CloudShell is the exception: it uses your federated console role automatically).
+Prefer AWS-managed/serverless operations over anything needing its own compute;
+there's no Lambda or server in this repo, and these scripts are meant to run from a plain terminal or AWS CloudShell.
 
 ## Requirements
 
@@ -39,9 +39,8 @@ no compute to keep running locally). Two subcommands:
   identity, export/table ARNs, item counts, output path, timestamp) both next
   to the output file and into S3 alongside the export.
 
-**No default environment.** `--table` and `--expect-account` are both required
-on every run `--expect-account` is a hard gate that even `--yes` can't bypass —
-the script exits if the resolved caller identity's account doesn't match 
+**No default environment.** `--table` and `--expect-account` are both required on every run.
+`--expect-account` is a hard gate that even `--yes` can't bypass — the script exits if the resolved caller identity's account doesn't match
 (pass an empty string to disable the check entirely).
 
 **Scoping to one app.** `fetch --app-id <id>` filters the result down to a

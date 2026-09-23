@@ -4,7 +4,7 @@ One-off export of Bridge Upload Schemas from DynamoDB, ahead of platform shutdow
 Uses a PITR export to S3 (not a live Scan) so it costs zero read capacity against
 the source table. --table and --expect-account are both required on every run
 (no dev/prod default -- you always say explicitly which environment you mean).
-See README.md for full details (--app-id scoping, S3 bucket permission
+See aws/README.md for full details (--app-id scoping, S3 bucket permission
 requirements, audit logging).
 """
 
@@ -236,6 +236,12 @@ def cmd_fetch(args):
     s3 = session.client("s3")
 
     description = poll_export(ddb, args.export_arn, args.wait, args.max_wait_seconds)
+    expected_table = table_arn(identity["Account"], session.region_name, args.table)
+    actual_table = description.get("TableArn")
+    if actual_table and actual_table != expected_table:
+        sys.exit(
+            f"Refusing to continue: export ARN table {actual_table} does not match --table {expected_table}."
+        )
     bucket = description["S3Bucket"]
     manifest_key = description["ExportManifest"]  # .../manifest-summary.json
 
@@ -316,6 +322,8 @@ def main():
     fetch = subparsers.add_parser("fetch", parents=[common], help="Fetch a completed export")
     fetch.add_argument("--export-arn", required=True,
                         help="(required) Export ARN printed by 'start'")
+    fetch.add_argument("--table", required=True,
+                        help="(required) DynamoDB table name (sanity-check against the export ARN)")
     fetch.add_argument("--out", default="upload_schemas.json",
                         help="Output JSON file (default: upload_schemas.json)")
     fetch.add_argument("--include-deleted", action="store_true",
